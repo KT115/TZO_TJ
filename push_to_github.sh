@@ -21,12 +21,12 @@ git commit -m "Initial commit: TrayZero+ TamJai Version app and requirements"
 git branch -M main
 
 # 5. Add remote GitHub repository
-git remote add origin https://github.com/$GITHUB_USERNAME/$REPO_NAME.git
+git remote add origin https://github.com/KT115/TZO_TJ.git
 
 # 6. Push code to GitHub
 git push -u origin main
 
 echo "=========================================="
 echo "Push complete! Your repository is now live at:"
-echo "https://github.com/$GITHUB_USERNAME/$REPO_NAME"
+echo "https://github.com/KT115/TZO_TJ"
 echo "=========================================="
