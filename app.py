@@ -1,6 +1,6 @@
 """
 TrayZero+ TamJai Version: AI-Driven Smart Tray Audit, BOH Kitchen Prep Optimization, and Custom Loyalty Loop System
-Standalone Streamlit Application (TamJai Edition with Lightweight Transformers for Fine-Tuning Integration)
+Standalone Streamlit Application (TamJai Edition with Ingredient Leftover Analytics)
 """
 
 import os
@@ -13,7 +13,7 @@ import numpy as np
 from PIL import Image
 import altair as alt
 
-# Safe import for torch and transformers (Lightweight pipeline configuration)
+# Safe import for torch and transformers
 try:
     import torch
     from transformers import AutoImageProcessor, AutoModelForImageClassification, AutoTokenizer, AutoModelForSeq2SeqLM
@@ -146,7 +146,8 @@ def init_tamjai_db():
     if cursor.fetchone()[0] == 0:
         sample_logs = [
             (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), '旺角亞皆老街店', '招牌米線 (Rice Noodles)', '三哥酸辣 (SamGor Hot & Sour)', 28.5, '韭菜 (Chives), 芽菜 (Bean Sprouts)', '湖南土匪雞翼 (Bandit Wings)', '【BOH 備料調整】分店芽菜與韭菜剩餘率達 28.5%，建議明日中央廚房減少 15% 蔬菜切配量。', '【FOH 會員獎勵】贈送 20 綠色環保積分。'),
-            (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), '銅鑼灣廣場店', '招牌米線 (Rice Noodles)', '麻辣 (Mala Broth)', 12.0, '湯底殘留 (Broth Liquid)', '蒜泥白肉 (Garlic Pork Belly)', '【BOH 備料調整】光盤率良好，維持現行湯底與米線標準配份。', '【FOH 會員獎勵】獲得 $3 堂食現金券 + 50 綠色積分。')
+            (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), '銅鑼灣廣場店', '招牌米線 (Rice Noodles)', '麻辣 (Mala Broth)', 12.0, '湯底殘留 (Broth Liquid)', '蒜泥白肉 (Garlic Pork Belly)', '【BOH 備料調整】光盤率良好，維持現行湯底與米線標準配份。', '【FOH 會員獎勵】獲得 $3 堂食現金券 + 50 綠色積分。'),
+            (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), '沙田廣場店', '招牌米線 (Rice Noodles)', '重慶酸辣湯底 (Chongqing Sour & Spicy)', 32.0, '韭菜 (Chives), 豆卜 (Tofu Puff), 湯底殘留 150ml', '無小菜', '【BOH 備料調整】韭菜與豆卜挑食率偏高，建議微調配份。', '【FOH 會員獎勵】獲得 15 積分。')
         ]
         cursor.executemany("INSERT INTO tamjai_audit_logs (timestamp, branch_name, dish_name, broth_type, waste_ratio, primary_leftover, side_dish_detected, directive_sop, reward_issued) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", sample_logs)
         
@@ -220,11 +221,8 @@ if app_mode == "📸 前線智慧回收台審計 (Kiosk Mode)":
                 st.info("💡 請於左側上傳回收托盤影像以啟動 Pipeline 1 (Swin-Tiny) 與 Pipeline 2 (Flan-T5) 輕量推論。")
                 
         if run_audit:
-            with st.spinner("🔄 正在載入輕量 Transformer 模型權重進行推論（支援本地與 Colab Fine-tune 權重掛載）..."):
+            with st.spinner("🔄 正在載入輕量 Transformer 模型權重進行推論..."):
                 time.sleep(0.6)
-                if TRANSFORMERS_AVAILABLE:
-                    # 預留給您之後掛載微調模型的介面示範
-                    pass
                 
             sim_waste_ratio = 24.5 if selected_side != "無小菜" else 15.2
             sim_leftover = "韭菜 (Chives), 芽菜 (Bean Sprouts), 湯底殘留 120ml"
@@ -240,7 +238,7 @@ if app_mode == "📸 前線智慧回收台審計 (Kiosk Mode)":
             conn.commit()
             conn.close()
             
-            st.success("✅ 審計完成並已透過輕量 Transformer 產出指令，寫入企業資料庫！")
+            st.success("✅ 審計完成並已寫入企業資料庫！")
             
             res_col1, res_col2, res_col3 = st.columns(3)
             res_col1.metric("綜合殘食浪費率", f"{sim_waste_ratio}%", delta="-3.2% vs 昨日", delta_color="inverse")
@@ -275,6 +273,46 @@ elif app_mode == "📊 總部營運與備料分析 (HQ & ESG Analytics)":
         kpi3.metric("年度預估食材成本節省", "HK$ 685萬", "精準備料驅動")
         kpi4.metric("Scope 3 減碳量", "2,450 噸 CO₂e", "符合 ESG 規範")
         
+        st.markdown("---")
+        
+        # ======================================================================
+        # 新增功能：食材食餘分析與排行榜 (Ingredient Leftover Analytics & Ranking)
+        # ======================================================================
+        st.subheader("🏆 譚仔全品項食材食餘與挑食排行榜 (Leftover Ranking)")
+        st.markdown("透過電腦視覺掃描殘留記錄，自動統計各項配料、蔬菜與湯底的剩餘次數，協助中央廚房精準備料。")
+
+        # 解析資料庫中的 primary_leftover 欄位並進行統計
+        if not df_logs.empty and 'primary_leftover' in df_logs.columns:
+            all_leftovers = []
+            for item in df_logs['primary_leftover'].dropna():
+                # 以逗號分隔拆解殘留項目
+                parts = [p.strip() for p in item.split(',')]
+                for p in parts:
+                    if p and p != "無":
+                        all_leftovers.append(p)
+            
+            if all_leftovers:
+                leftover_counts = pd.Series(all_leftovers).value_counts().reset_index()
+                leftover_counts.columns = ['食材 / 殘留項目', '剩餘次數 (Count)']
+                
+                col_chart, col_table = st.columns([1.2, 1])
+                with col_chart:
+                    # 繪製食餘排行榜長條圖
+                    rank_chart = alt.Chart(leftover_counts).mark_bar(color='#C2410C').encode(
+                        x=alt.X('剩餘次數 (Count):Q', title='剩餘次數'),
+                        y=alt.Y('食材 / 殘留項目:N', sort='-x', title='食材項目'),
+                        tooltip=['食材 / 殘留項目', '剩餘次數 (Count)']
+                    ).properties(height=280, title="各項食材挑食/食餘頻次統計")
+                    st.altair_chart(rank_chart, use_container_width=True)
+                    
+                with col_table:
+                    st.markdown("#### 📋 食餘排行榜明細")
+                    st.dataframe(leftover_counts, use_container_width=True, hide_index=True)
+            else:
+                st.info("目前尚無足夠的食材食餘明細數據。")
+        else:
+            st.info("尚無審計記錄。")
+
         st.markdown("---")
         st.subheader("📋 即時回收審計記錄與備料回饋")
         if not df_logs.empty:
