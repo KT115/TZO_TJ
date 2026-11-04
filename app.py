@@ -1,6 +1,6 @@
 """
 TrayZero+ TamJai Version: AI-Driven Smart Tray Audit, BOH Kitchen Prep Optimization, and Custom Loyalty Loop System
-Standalone Streamlit Application (TamJai Edition with Ingredient Leftover Analytics)
+Standalone Streamlit Application (TamJai Edition - Full Integrated Version)
 """
 
 import os
@@ -216,7 +216,7 @@ if app_mode == "📸 前線智慧回收台審計 (Kiosk Mode)":
             st.subheader("🔍 審計檢視與即時分析 (Fine-tuned Swin/Flan-T5 Ready)")
             if uploaded_file is not None:
                 image = Image.open(uploaded_file)
-                st.image(image, caption="已上傳之譚仔回收托盤影像", use_container_width=True)
+                st.image(image, caption="已上傳之譚仔回收托盤影像", width='stretch')
             else:
                 st.info("💡 請於左側上傳回收托盤影像以啟動 Pipeline 1 (Swin-Tiny) 與 Pipeline 2 (Flan-T5) 輕量推論。")
                 
@@ -276,16 +276,14 @@ elif app_mode == "📊 總部營運與備料分析 (HQ & ESG Analytics)":
         st.markdown("---")
         
         # ======================================================================
-        # 新增功能：食材食餘分析與排行榜 (Ingredient Leftover Analytics & Ranking)
+        # 食材食餘分析與排行榜 (Ingredient Leftover Analytics & Ranking)
         # ======================================================================
         st.subheader("🏆 譚仔全品項食材食餘與挑食排行榜 (Leftover Ranking)")
         st.markdown("透過電腦視覺掃描殘留記錄，自動統計各項配料、蔬菜與湯底的剩餘次數，協助中央廚房精準備料。")
 
-        # 解析資料庫中的 primary_leftover 欄位並進行統計
         if not df_logs.empty and 'primary_leftover' in df_logs.columns:
             all_leftovers = []
             for item in df_logs['primary_leftover'].dropna():
-                # 以逗號分隔拆解殘留項目
                 parts = [p.strip() for p in item.split(',')]
                 for p in parts:
                     if p and p != "無":
@@ -297,17 +295,16 @@ elif app_mode == "📊 總部營運與備料分析 (HQ & ESG Analytics)":
                 
                 col_chart, col_table = st.columns([1.2, 1])
                 with col_chart:
-                    # 繪製食餘排行榜長條圖
                     rank_chart = alt.Chart(leftover_counts).mark_bar(color='#C2410C').encode(
                         x=alt.X('剩餘次數 (Count):Q', title='剩餘次數'),
                         y=alt.Y('食材 / 殘留項目:N', sort='-x', title='食材項目'),
                         tooltip=['食材 / 殘留項目', '剩餘次數 (Count)']
                     ).properties(height=280, title="各項食材挑食/食餘頻次統計")
-                    st.altair_chart(rank_chart, use_container_width=True)
+                    st.altair_chart(rank_chart, width='stretch')
                     
                 with col_table:
                     st.markdown("#### 📋 食餘排行榜明細")
-                    st.dataframe(leftover_counts, use_container_width=True, hide_index=True)
+                    st.dataframe(leftover_counts, width='stretch', hide_index=True)
             else:
                 st.info("目前尚無足夠的食材食餘明細數據。")
         else:
@@ -316,7 +313,7 @@ elif app_mode == "📊 總部營運與備料分析 (HQ & ESG Analytics)":
         st.markdown("---")
         st.subheader("📋 即時回收審計記錄與備料回饋")
         if not df_logs.empty:
-            st.dataframe(df_logs, use_container_width=True)
+            st.dataframe(df_logs, width='stretch')
         else:
             st.info("尚無審計記錄。")
             
@@ -330,7 +327,7 @@ elif app_mode == "📊 總部營運與備料分析 (HQ & ESG Analytics)":
             y='平均浪費率 (%):Q',
             tooltip=['分店', '平均浪費率 (%)']
         ).properties(height=320)
-        st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, width='stretch')
 
 # --- MODE 3: Taxonomy & Master Configuration ---
 elif app_mode == "⚙️ 譚仔全品項 Taxonomy 字典管理":
@@ -348,7 +345,7 @@ elif app_mode == "⚙️ 譚仔全品項 Taxonomy 字典管理":
     conn.close()
     
     st.subheader("🏷️ 目前資料庫收錄之譚仔菜單與配料標籤")
-    st.dataframe(df_menu, use_container_width=True)
+    st.dataframe(df_menu, width='stretch')
     
     st.markdown("### ➕ 新增自定義檢測類別 / 配料")
     with st.form("add_taxonomy_form"):
